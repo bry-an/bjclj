@@ -6,6 +6,7 @@
    [reitit.frontend :as reitit]
    [clerk.core :as clerk]
    [bjclj.util :as util]
+   [bjclj.constants :as constants]
    [bjclj.game :as game]
    [bjclj.app-state :as state]
    [accountant.core :as accountant]))
@@ -30,7 +31,7 @@
 ;; State
 (def app-state
   (atom
-   {:deck (shuffle util/deck)}))
+   {:deck (shuffle constants/deck)}))
 
 (defn update-deck! [f & args]
   (apply swap! app-state update-in [:deck] f args))
@@ -38,21 +39,18 @@
 (defn add-card! [c]
   (update-deck! conj c))
 
-(defn hit [player]
+(defn hit []
     (update-deck! (fn [deck]
-                     (util/hit 2 deck))))
+                     (util/hit :player1 deck))))
+(defn reset []
+  (update-deck! #(map util/reset-card %)))
 
 (defn remove-card! [c]
   (update-deck! (fn [cs]
                   (vec (remove #(= % c) cs)))
                 c))
-
 ;; -------------------------
 ;; Page components
-
-(defn handle-deal
-  []
-  (add-card! (first util/deck)))
 
 (defn home-page []
   (fn []
@@ -62,10 +60,13 @@
       [:p "Try some things out"]]
      [:div {:class ["flex" "items-start"]}
       [:ul (map game/display-card (:deck @app-state))]
-      [:button {:on-click hit} "Hit"]
-      [:h2 "Your Hand"]
-      [:ul
-       [:li (map game/display-card (util/get-player-hand 2 (:deck @app-state)))]]]]))
+      [:div
+       [:div {:class ["flex items-between"]}
+          [:button {:on-click hit} "Hit"]
+          (if (> (util/get-player-hand-val :player1 (:deck @app-state)) 21) [:button {:on-click reset}"Reset"])]
+       [:h2 "Your Hand"]
+       [:p "Your hand value: " (util/get-player-hand-val :player1 (:deck @app-state))]
+       [:ul (map game/display-card (util/get-player-hand :player1 (:deck @app-state)))]]]]))
 
 
 

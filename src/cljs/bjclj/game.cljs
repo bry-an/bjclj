@@ -2,7 +2,7 @@
 
 (defn display-card
   [card]
-  [:li {:key (:display card)}(:display card) (:belongs card)])
+  [:li {:key (:id card)}(:display card)])
 
 (defn deal-click
   []
