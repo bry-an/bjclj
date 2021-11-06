@@ -7,6 +7,7 @@
    [clerk.core :as clerk]
    [bjclj.util :as util]
    [bjclj.constants :as constants]
+   [bjclj.components.buttons :as buttons]
    [bjclj.game :as game]
    [bjclj.app-state :as state]
    [accountant.core :as accountant]))
@@ -28,61 +29,6 @@
     (:path (reitit/match-by-name router route))))
 
 ;; -------------------------
-;; State
-(def app-state
-  (atom
-   {:deck (shuffle constants/deck)}
-   {:game? false}))
-
-(defn update-deck! [f & args]
-  (apply swap! app-state update-in [:deck] f args))
-
-
-(defn hit [player]
-    (update-deck! (fn [deck]
-                     (util/hit player deck))))
-(defn reset []
-  (update-deck! #(map util/reset-card %)))
-
-(defn remove-card! [c]
-  (update-deck! (fn [cs]
-                  (vec (remove #(= % c) cs)))
-                c))
-
-(defn toggle-game []
-  (swap! app-state update-in [:game] util/invert))
-
-(defn deal-initial-cards! [player]
-  (dotimes [n 2] (hit player)))
-
-
-  
-;; getters
-
-(defn hand-val [{:keys [deck]} player]
-  (util/get-player-hand-val player deck))
-
-(defn hand [{:keys [deck]} player]
-  (util/get-player-hand player deck))
-
-(defn action-button [state player]
-  (cond
-    (= 0 (hand-val state player)) [:button {:on-click #(deal-initial-cards! player)} "Deal"]
-    (> (hand-val state :dealer) 10) [:button {:on-click reset} "Play Again"]
-    (< (hand-val state player) 21) [:button {:on-click #(hit player)} "Hit"]
-    (> (hand-val @app-state :player1) 21) [:button {:on-click reset} "Reset"]))
-
-(defn did-player-win [state player]
-  (let [p (hand-val state player)
-        d (hand-val state :dealer)]
-    (cond (> d p) nil 
-          (> p d) true)))
-          
-    
-(defn resolve-game [state player]
-  (if (< (hand-val state :dealer) 17) (resolve-game (hit :dealer))))
-  
-;; -------------------------
 ;; Page components
 
 (defn home-page []
@@ -94,20 +40,20 @@
        [:p "Try some things out"]]]
      [:div {:class ["flex pm"]}
       [:div
-       [:ul (map game/display-card (:deck @app-state))]]
+       [:ul (map game/display-card (:deck @state/app-state))]]
       [:div {:class ["flex pm"]}
-       [:div {:class ["flex pm items-start"]}
-         (action-button @app-state :player1)
+       [:div {:class ["pm items-start"]}
+         (buttons/action-button @state/app-state :player1)
          [:h2 "Your Hand"]
-         [:p "Your hand value: " (hand-val @app-state :player1)]
-         [:ul (map game/display-card (hand @app-state :player1))]]
-       [:div {:class ["flex pm items-start"]}
-        [:button {:on-click #(hit :dealer)} "Hit Dealer"]
+         [:p "Your hand value: " (state/hand-val @state/app-state :player1)]
+         [:ul (map game/display-card (state/hand @state/app-state :player1))]]
+       [:div {:class ["pm items-start"]}
+        [:button {:on-click #(state/hit :dealer)} "Hit Dealer"]
         [:h2 "Dealer Hand"]
-        [:p "Dealer hand value: " (hand-val @app-state :dealer)]
-        [:ul (map game/display-card (hand @app-state :dealer))]]
+        [:p "Dealer hand value: " (state/hand-val @state/app-state :dealer)]
+        [:ul (map game/display-card (state/hand @state/app-state :dealer))]]
        [:div
-        [:button {:on-click #(resolve-game @app-state :player1)} "Resolve"]]]]]))
+        [:button {:on-click #(state/resolve-game @state/app-state :player1)} "Resolve"]]]]]))
 
 
 (defn items-page []
