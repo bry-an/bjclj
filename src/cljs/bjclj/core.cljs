@@ -31,17 +31,16 @@
 ;; State
 (def app-state
   (atom
-   {:deck (shuffle constants/deck)}))
+   {:deck (shuffle constants/deck)}
+   {:game? false}))
 
 (defn update-deck! [f & args]
   (apply swap! app-state update-in [:deck] f args))
 
-(defn add-card! [c]
-  (update-deck! conj c))
 
-(defn hit []
+(defn hit [player]
     (update-deck! (fn [deck]
-                     (util/hit :player1 deck))))
+                     (util/hit player deck))))
 (defn reset []
   (update-deck! #(map util/reset-card %)))
 
@@ -49,25 +48,66 @@
   (update-deck! (fn [cs]
                   (vec (remove #(= % c) cs)))
                 c))
+
+(defn toggle-game []
+  (swap! app-state update-in [:game] util/invert))
+
+(defn deal-initial-cards! [player]
+  (dotimes [n 2] (hit player)))
+
+
+  
+;; getters
+
+(defn hand-val [{:keys [deck]} player]
+  (util/get-player-hand-val player deck))
+
+(defn hand [{:keys [deck]} player]
+  (util/get-player-hand player deck))
+
+(defn action-button [state player]
+  (cond
+    (= 0 (hand-val state player)) [:button {:on-click #(deal-initial-cards! player)} "Deal"]
+    (> (hand-val state :dealer) 10) [:button {:on-click reset} "Play Again"]
+    (< (hand-val state player) 21) [:button {:on-click #(hit player)} "Hit"]
+    (> (hand-val @app-state :player1) 21) [:button {:on-click reset} "Reset"]))
+
+(defn did-player-win [state player]
+  (let [p (hand-val state player)
+        d (hand-val state :dealer)]
+    (cond (> d p) nil 
+          (> p d) true)))
+          
+    
+(defn resolve-game [state player]
+  (if (< (hand-val state :dealer) 17) (resolve-game (hit :dealer))))
+  
 ;; -------------------------
 ;; Page components
 
 (defn home-page []
   (fn []
     [:span.main
-     [:h1 "The Blackjack Simulator"]
-     [:div
-      [:p "Try some things out"]]
-     [:div {:class ["flex" "items-start"]}
-      [:ul (map game/display-card (:deck @app-state))]
+     [:header {:class []}
+      [:h1 "The Blackjack Simulator"]
       [:div
-       [:div {:class ["flex items-between"]}
-          [:button {:on-click hit} "Hit"]
-          (if (> (util/get-player-hand-val :player1 (:deck @app-state)) 21) [:button {:on-click reset}"Reset"])]
-       [:h2 "Your Hand"]
-       [:p "Your hand value: " (util/get-player-hand-val :player1 (:deck @app-state))]
-       [:ul (map game/display-card (util/get-player-hand :player1 (:deck @app-state)))]]]]))
-
+       [:p "Try some things out"]]]
+     [:div {:class ["flex pm"]}
+      [:div
+       [:ul (map game/display-card (:deck @app-state))]]
+      [:div {:class ["flex pm"]}
+       [:div {:class ["flex pm items-start"]}
+         (action-button @app-state :player1)
+         [:h2 "Your Hand"]
+         [:p "Your hand value: " (hand-val @app-state :player1)]
+         [:ul (map game/display-card (hand @app-state :player1))]]
+       [:div {:class ["flex pm items-start"]}
+        [:button {:on-click #(hit :dealer)} "Hit Dealer"]
+        [:h2 "Dealer Hand"]
+        [:p "Dealer hand value: " (hand-val @app-state :dealer)]
+        [:ul (map game/display-card (hand @app-state :dealer))]]
+       [:div
+        [:button {:on-click #(resolve-game @app-state :player1)} "Resolve"]]]]]))
 
 
 (defn items-page []

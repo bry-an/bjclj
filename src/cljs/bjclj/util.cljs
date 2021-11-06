@@ -1,7 +1,9 @@
 (ns bjclj.util)
 
-(defn not-owned-pred [card]
-  (= (:belongs card) :house))
+(defn not-owned-or-seen-pred [{:keys [belongs, seen]}]
+  (and
+   (= belongs :house)
+   (false? seen)))
 
 (defn make-owned-pred [player]
   (fn [card]
@@ -22,7 +24,9 @@
       (=
        (:id card)
        (:id card-to-assign))
-      (assoc card :belongs player)
+      (-> card
+          (assoc :seen true)
+          (assoc :belongs player))
       card)))
   
 (defn hand-val-reducer [accum card]
@@ -38,10 +42,10 @@
 (defn has-aces? [hand]
   (> (count (filter ace? hand)) 0))
 
-(def available-cards (partial filter not-owned-pred))
+(def available-cards (partial filter not-owned-or-seen-pred))
 
 (defn hit [player deck]
-  (let [available-cards (filter not-owned-pred deck)]
+  (let [available-cards (filter not-owned-or-seen-pred deck)]
     (map (assign-card-to-player (first available-cards) player) deck)))
     
 (defn get-player-hand [player deck]
@@ -68,3 +72,7 @@
 (defn valid-hit [player deck]
   (< (get-player-hand-val player deck) 21))
 
+(defn invert [x]
+  (if (or false nil)
+    true
+    false))

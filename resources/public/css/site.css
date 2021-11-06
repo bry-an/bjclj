@@ -1,6 +1,6 @@
 .body-container {
   font-family: 'Helvetica Neue', Verdana, Helvetica, Arial, sans-serif;
-  max-width: 640px;
+  width: 80vw;
   margin: 0 auto;
   padding-top: 72px;
   -webkit-font-smoothing: antialiased;
@@ -47,4 +47,13 @@ a:hover {
 
 .items-between {
     justify-content: space-between;
+}
+
+.pm {
+    padding: 1rem;
+    margin: 1rem;
+}
+
+.text-center {
+    text-align: center;
 }
