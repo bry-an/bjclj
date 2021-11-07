@@ -7,9 +7,9 @@
    [clerk.core :as clerk]
    [bjclj.util :as util]
    [bjclj.constants :as constants]
-   [bjclj.components.buttons :as buttons]
+   [bjclj.buttons :as buttons]
    [bjclj.game :as game]
-   [bjclj.app-state :as state]
+   [bjclj.app-state :as state :refer [get-state]]
    [accountant.core :as accountant]))
 
 ;; -------------------------
@@ -31,7 +31,7 @@
 ;; -------------------------
 ;; Page components
 
-(defn home-page []
+(defn table []
   (fn []
     [:span.main
      [:header {:class []}
@@ -40,20 +40,25 @@
        [:p "Try some things out"]]]
      [:div {:class ["flex pm"]}
       [:div
-       [:ul (map game/display-card (:deck @state/app-state))]]
+       [:ul (map game/display-card (:deck @get-state))]]
       [:div {:class ["flex pm"]}
        [:div {:class ["pm items-start"]}
-         (buttons/action-button @state/app-state :player1)
          [:h2 "Your Hand"]
-         [:p "Your hand value: " (state/hand-val @state/app-state :player1)]
-         [:ul (map game/display-card (state/hand @state/app-state :player1))]]
+         (buttons/action-button :player1)
+         [:p "Your hand value: " (state/hand-val @get-state :player1)]
+         [:ul (map game/display-card (state/hand @get-state :player1))]]
        [:div {:class ["pm items-start"]}
-        [:button {:on-click #(state/hit :dealer)} "Hit Dealer"]
         [:h2 "Dealer Hand"]
-        [:p "Dealer hand value: " (state/hand-val @state/app-state :dealer)]
-        [:ul (map game/display-card (state/hand @state/app-state :dealer))]]
-       [:div
-        [:button {:on-click #(state/resolve-game @state/app-state :player1)} "Resolve"]]]]]))
+        [:button {:on-click #(state/hit :dealer)} "Hit Dealer"]
+        [:p "Dealer hand value: " (state/hand-val @get-state :dealer)]
+        [:ul (map game/display-card (state/hand @get-state :dealer))]]
+       [:div {:class ["flex items-start pm"]}
+        [:button {:on-click #(state/resolve-game @get-state :player1)} "Resolve"]]
+       [:div {:class ["flex items-start pm"]}
+        (if @(state/player-won? :player1) [:h3 "You won!"])]
+       [:div {:class ["flex items-start pm"]}
+        [:p "Total Wins:" (:wins @get-state)]]
+       [:div]]]]))
 
 
 (defn items-page []
@@ -85,7 +90,7 @@
 
 (defn page-for [route]
   (case route
-    :index #'home-page
+    :index #'table
     :about #'about-page
     :items #'items-page
     :item #'item-page))
